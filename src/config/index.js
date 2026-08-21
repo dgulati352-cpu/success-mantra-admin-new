@@ -21,8 +21,8 @@ export const config = {
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
   },
   razorpay: {
-    keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_TSSSbzfqnMRNfR',
-    keySecret: process.env.RAZORPAY_KEY_SECRET || 'bOEJs5ws33FUqGLMo54rt6Ww'
+    keyId: process.env.RAZORPAY_KEY_ID || 'rzp_live_TSTuUaB8JuoACR',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || 'Hac92vokRMfE9N48ukGA7sZr'
   },
   email: {
     host: process.env.EMAIL_HOST,
