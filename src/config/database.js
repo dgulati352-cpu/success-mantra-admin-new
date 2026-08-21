@@ -9,62 +9,69 @@ try {
   // Ignore if not supported in environment
 }
 
-let isConnected = false;
-let mongoServer = null;
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 export const connectDB = async () => {
-  if (isConnected) {
-    console.log('Already connected to MongoDB');
-    return;
+  if (cached.conn) {
+    return cached.conn;
   }
 
-  // 1. First try connecting to configured URI
-  try {
-    const conn = await mongoose.connect(config.mongodb.uri, {
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-    });
+    };
 
-    isConnected = true;
-    console.log(`MongoDB connected: ${conn.connection.host}`);
-    await seedDatabase();
-    return;
-  } catch (error) {
-    console.warn(`Could not connect to MongoDB at ${config.mongodb.uri}: ${error.message}`);
-    console.log('Starting in-memory MongoDB server as development fallback...');
+    cached.promise = mongoose
+      .connect(config.mongodb.uri, opts)
+      .then(async (m) => {
+        console.log(`MongoDB connected: ${m.connection.host}`);
+        try {
+          await seedDatabase();
+        } catch (err) {
+          console.warn('Seed database warning:', err.message);
+        }
+        return m;
+      })
+      .catch(async (error) => {
+        console.warn(`Could not connect to MongoDB at ${config.mongodb.uri}: ${error.message}`);
+        if (!process.env.VERCEL && process.env.NODE_ENV === 'development') {
+          try {
+            const { MongoMemoryServer } = await import('mongodb-memory-server');
+            const mongoServer = await MongoMemoryServer.create({ binary: { version: '4.4.29' } });
+            const memoryUri = mongoServer.getUri();
+            const conn = await mongoose.connect(memoryUri);
+            console.log(`In-Memory MongoDB connected: ${memoryUri}`);
+            await seedDatabase();
+            return conn;
+          } catch (memErr) {
+            console.error('In-memory fallback failed:', memErr.message);
+          }
+        }
+        throw error;
+      });
   }
 
-  // 2. Fallback to MongoMemoryServer
   try {
-    const { MongoMemoryServer } = await import('mongodb-memory-server');
-    mongoServer = await MongoMemoryServer.create({
-      binary: {
-        version: '4.4.29'
-      }
-    });
-    const memoryUri = mongoServer.getUri();
-    const conn = await mongoose.connect(memoryUri);
-    isConnected = true;
-    console.log(`In-Memory MongoDB connected: ${memoryUri}`);
-    await seedDatabase();
-  } catch (err) {
-    console.error('Failed to initialize MongoDB (both local and in-memory failed):', err);
-    process.exit(1);
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
   }
+
+  return cached.conn;
 };
 
 export const disconnectDB = async () => {
-  if (!isConnected) return;
-  await mongoose.disconnect();
-  if (mongoServer) {
-    await mongoServer.stop();
+  if (cached.conn) {
+    await mongoose.disconnect();
+    cached.conn = null;
+    cached.promise = null;
   }
-  isConnected = false;
-  console.log('MongoDB disconnected');
 };
-
-process.on('SIGINT', async () => {
-  await disconnectDB();
-  process.exit(0);
-});
