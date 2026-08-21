@@ -223,6 +223,52 @@ router.get('/:id', (req, res) => {
   });
 });
 
+// POST /api/lectures - Upload & Publish new video lecture
+router.post('/', (req, res) => {
+  const { title, subject, grade, chapter, lectureNo, duration, instructor, instructorTitle, videoUrl, isFree, description, notesPdfName } = req.body;
+
+  if (!title || !subject) {
+    return res.status(400).json({ success: false, message: 'Please provide lecture title and subject' });
+  }
+
+  const newLecture = {
+    id: `lec-${Date.now().toString(36)}`,
+    title,
+    subject,
+    grade: grade || '12',
+    category: grade || '12',
+    exam: `CBSE Class ${grade || '12'} Boards`,
+    chapter: chapter || 'Chapter: Comprehensive Masterclass',
+    lectureNo: lectureNo || '01',
+    duration: duration || '50 mins',
+    instructor: instructor || 'Prof. S. K. Sharma',
+    instructorTitle: instructorTitle || 'Senior Faculty & Author',
+    views: '0',
+    rating: 5.0,
+    isFree: Boolean(isFree),
+    thumbnail: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&auto=format&fit=crop&q=80',
+    videoUrl: videoUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    accentColor: 'from-blue-600 to-indigo-700',
+    description: description || 'HD Chapter Video Masterclass with formula breakdowns and board exam problems.',
+    timestamps: [
+      { time: '00:00', title: 'Chapter Introduction & Theory' },
+      { time: '15:00', title: 'Step-by-Step Solved Problem' },
+      { time: '35:00', title: 'Board Exam PYQ Analysis' }
+    ],
+    pdfNotesPages: 16,
+    pdfNotesAvailable: true,
+    publishedAt: new Date().toISOString(),
+  };
+
+  lectures.unshift(newLecture);
+
+  res.status(201).json({
+    success: true,
+    message: 'Video lecture published successfully!',
+    data: newLecture,
+  });
+});
+
 // POST /api/lectures/:id/doubt - Submit question from student
 router.post('/:id/doubt', (req, res) => {
   const { question, timestamp, studentEmail } = req.body;
