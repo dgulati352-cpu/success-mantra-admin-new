@@ -1035,8 +1035,105 @@ const getDashboardHtml = () => `
             <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Video Lecture</button>
           </form>
         `;
+      } else if (type === 'add-book') {
+        content.innerHTML = `
+          <div class="modal-header">
+            <h3 class="modal-title">Upload & Publish Book / PDF</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
+          </div>
+          <form onsubmit="submitNewBook(event)">
+            <div class="form-group">
+              <label class="form-label">Book / Study Material Title</label>
+              <input type="text" id="new-bk-title" class="form-input" required placeholder="e.g. Class 12 Accountancy Board Master Guide 2026">
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+              <div class="form-group">
+                <label class="form-label">Author / Faculty</label>
+                <input type="text" id="new-bk-author" class="form-input" required value="Prof. S. K. Sharma">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Subject</label>
+                <select id="new-bk-subject" class="form-select">
+                  <option>Accountancy</option>
+                  <option>Business Studies</option>
+                  <option>Economics</option>
+                  <option>Commercial Law</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+              <div class="form-group">
+                <label class="form-label">Selling Price (₹)</label>
+                <input type="number" id="new-bk-price" class="form-input" required value="449">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Format & Total Pages</label>
+                <input type="text" id="new-bk-format" class="form-input" value="Paperback + eBook (350 pages)">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Attach PDF Document</label>
+              <div style="border:2px dashed var(--card-border); border-radius:12px; padding:1rem; text-align:center; background:#0E121B;">
+                <div id="pdf-chosen-name" style="font-size:0.8rem; font-weight:700; color:#818CF8; margin-bottom:0.3rem;">Choose PDF Document (.pdf)</div>
+                <input type="file" id="local-pdf-input" accept=".pdf" style="display:none;" onchange="handleLocalPdfSelected(event)">
+                <label for="local-pdf-input" class="btn-primary" style="cursor:pointer; display:inline-block; font-size:0.75rem;">Browse PDF File</label>
+              </div>
+            </div>
+
+            <div class="form-group" style="background:#0E121B; padding:0.75rem; border-radius:10px; border:1px solid rgba(16, 185, 129, 0.3);">
+              <span style="color:#34D399; font-size:0.75rem; font-weight:700;">✓ 5-Page Sample Viewer will be auto-configured (Pages 1–5 Free, Pages 6+ Locked).</span>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Book to Store</button>
+          </form>
+        `;
+      } else if (type === 'add-test') {
+        content.innerHTML = `
+          <div class="modal-header">
+            <h3 class="modal-title">Create CBT Mock Test Series</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
+          </div>
+          <form onsubmit="submitNewTest(event)">
+            <div class="form-group">
+              <label class="form-label">Test Paper Title</label>
+              <input type="text" id="new-ts-title" class="form-input" required placeholder="e.g. Class 12 Accountancy Board Full Mock 2">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+              <div class="form-group">
+                <label class="form-label">Duration</label>
+                <input type="text" id="new-ts-dur" class="form-input" value="180 mins">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Total Marks</label>
+                <input type="number" id="new-ts-marks" class="form-input" value="80">
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Test Paper</button>
+          </form>
+        `;
+      } else if (type === 'add-banner') {
+        content.innerHTML = `
+          <div class="modal-header">
+            <h3 class="modal-title">Upload Promotional Banner</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
+          </div>
+          <form onsubmit="submitNewBanner(event)">
+            <div class="form-group">
+              <label class="form-label">Banner Campaign Title</label>
+              <input type="text" id="new-bn-title" class="form-input" required placeholder="e.g. Board Toppers Fast-Track Batch">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target Page Link</label>
+              <input type="text" id="new-bn-link" class="form-input" required value="/courses">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Activate Banner</button>
+          </form>
+        `;
       } else if (type === 'add-promo') {
-        content.innerHTML = \`
+        content.innerHTML = `
           <div class="modal-header">
             <h3 class="modal-title">Create Promo Code</h3>
             <button class="close-btn" onclick="closeModal()">✕</button>
@@ -1052,7 +1149,7 @@ const getDashboardHtml = () => `
             </div>
             <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Activate Code</button>
           </form>
-        \`;
+        `;
       }
     }
 
@@ -1154,6 +1251,79 @@ const getDashboardHtml = () => `
       renderCurrentTab();
     }
 
+    let selectedPdfFileName = '';
+
+    function handleLocalPdfSelected(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        selectedPdfFileName = file.name;
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        const nameEl = document.getElementById('pdf-chosen-name');
+        if (nameEl) {
+          nameEl.innerHTML = '✓ Attached: ' + file.name + ' (' + sizeMb + ' MB)';
+          nameEl.style.color = '#34D399';
+        }
+        showToast('PDF Document Attached: ' + file.name);
+      }
+    }
+
+    function submitNewBook(e) {
+      e.preventDefault();
+      const title = document.getElementById('new-bk-title').value;
+      const author = document.getElementById('new-bk-author').value || 'Prof. S. K. Sharma';
+      const price = Number(document.getElementById('new-bk-price').value) || 449;
+      const format = document.getElementById('new-bk-format').value || 'Paperback + eBook';
+
+      books.unshift({
+        id: 'BK-0' + (books.length + 1),
+        title: title,
+        author: author,
+        price: price,
+        sales: 0,
+        format: format,
+        pages: 350
+      });
+      closeModal();
+      showToast('Book / Study Material "' + title + '" published to store!');
+      renderCurrentTab();
+    }
+
+    function submitNewTest(e) {
+      e.preventDefault();
+      const title = document.getElementById('new-ts-title').value;
+      const dur = document.getElementById('new-ts-dur').value || '180 mins';
+      const marks = Number(document.getElementById('new-ts-marks').value) || 80;
+
+      tests.unshift({
+        id: 'TS-0' + (tests.length + 1),
+        title: title,
+        marks: marks,
+        duration: dur,
+        attempts: 0,
+        avgScore: 'N/A',
+        isFree: true
+      });
+      closeModal();
+      showToast('Mock Test Series created successfully!');
+      renderCurrentTab();
+    }
+
+    function submitNewBanner(e) {
+      e.preventDefault();
+      const title = document.getElementById('new-bn-title').value;
+      const link = document.getElementById('new-bn-link').value || '/courses';
+
+      banners.unshift({
+        id: 'BN-0' + (banners.length + 1),
+        title: title,
+        status: 'LIVE',
+        link: link
+      });
+      closeModal();
+      showToast('Promotional Banner activated!');
+      renderCurrentTab();
+    }
+
     function submitNewPromo(e) {
       e.preventDefault();
       const code = document.getElementById('new-promo-code').value.toUpperCase();
@@ -1195,7 +1365,7 @@ const getDashboardHtml = () => `
       document.getElementById('pending-badge').innerText = pendingCount;
 
       if (currentTab === 'dashboard') {
-        container.innerHTML = \`
+        container.innerHTML = `
           <!-- 4 Top Metric Cards (Exact Match to Reference Screenshot) -->
           <div class="metrics-grid">
             <div class="metric-card">
@@ -1271,9 +1441,9 @@ const getDashboardHtml = () => `
               </table>
             </div>
           </div>
-        \`;
+        `;
       } else if (currentTab === 'orders') {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="table-card">
             <div class="table-header">
               <div class="table-title">
@@ -1315,9 +1485,9 @@ const getDashboardHtml = () => `
               </table>
             </div>
           </div>
-        \`;
+        `;
       } else if (currentTab === 'customers') {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="table-card">
             <div class="table-header">
               <div class="table-title">
@@ -1359,9 +1529,9 @@ const getDashboardHtml = () => `
               </table>
             </div>
           </div>
-        \`;
+        `;
       } else if (currentTab === 'lectures') {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="table-card">
             <div class="table-header">
               <div class="table-title">
@@ -1401,15 +1571,15 @@ const getDashboardHtml = () => `
               </table>
             </div>
           </div>
-        \`;
+        `;
       } else if (currentTab === 'books') {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="table-card">
             <div class="table-header">
               <div class="table-title">
                 <span>📚 Published Books & Study Materials (\${books.length})</span>
               </div>
-              <button class="btn-primary" onclick="showToast('Add book modal opened.')">+ Add Book / PDF</button>
+              <button class="btn-primary" onclick="openModal('add-book')">+ Add Book / PDF</button>
             </div>
             <div style="overflow-x: auto;">
               <table class="data-table">
@@ -1439,15 +1609,15 @@ const getDashboardHtml = () => `
               </table>
             </div>
           </div>
-        \`;
+        `;
       } else if (currentTab === 'tests') {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="table-card">
             <div class="table-header">
               <div class="table-title">
                 <span>📝 CBT Mock Test Series (\${tests.length})</span>
               </div>
-              <button class="btn-primary" onclick="showToast('Test series editor opened.')">+ Create Test</button>
+              <button class="btn-primary" onclick="openModal('add-test')">+ Create Test</button>
             </div>
             <div style="overflow-x: auto;">
               <table class="data-table">
@@ -1474,9 +1644,9 @@ const getDashboardHtml = () => `
               </table>
             </div>
           </div>
-        \`;
+        `;
       } else if (currentTab === 'memberships') {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="metrics-grid">
             <div class="metric-card">
               <div class="metric-icon-box icon-purple">👑</div>
@@ -1525,15 +1695,15 @@ const getDashboardHtml = () => `
               <button class="btn-primary" onclick="grantVipPass()">Grant Membership</button>
             </div>
           </div>
-        \`;
+        `;
       } else if (currentTab === 'banners') {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="table-card">
             <div class="table-header">
               <div class="table-title">
                 <span>🖼️ Promotional Home Banners (\${banners.length})</span>
               </div>
-              <button class="btn-primary" onclick="showToast('Upload banner modal opened.')">+ Upload Banner</button>
+              <button class="btn-primary" onclick="openModal('add-banner')">+ Upload Banner</button>
             </div>
             <div style="overflow-x: auto;">
               <table class="data-table">
@@ -1556,7 +1726,7 @@ const getDashboardHtml = () => `
               </table>
             </div>
           </div>
-        \`;
+        `;
       } else if (currentTab === 'promos') {
         container.innerHTML = \`
           <div class="table-card">
@@ -1597,7 +1767,7 @@ const getDashboardHtml = () => `
               <div class="table-title">
                 <span>📦 Store Products & Book Bundles (\${books.length})</span>
               </div>
-              <button class="btn-primary" onclick="showToast('Product editor opened.')">+ Add Product</button>
+              <button class="btn-primary" onclick="openModal('add-book')">+ Add Product</button>
             </div>
             <div style="overflow-x: auto;">
               <table class="data-table">
