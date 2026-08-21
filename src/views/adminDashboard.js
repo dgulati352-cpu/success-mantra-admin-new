@@ -479,7 +479,7 @@ export const adminDashboardHtml = `<!DOCTYPE html>
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.8);
       backdrop-filter: blur(4px);
       z-index: 100;
       display: none;
@@ -492,11 +492,11 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       background: #141824;
       border: 1px solid var(--card-border);
       border-radius: 20px;
-      max-width: 550px;
+      max-width: 650px;
       width: 100%;
-      padding: 2rem;
+      padding: 1.75rem;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-      max-height: 90vh;
+      max-height: 92vh;
       overflow-y: auto;
     }
 
@@ -504,14 +504,14 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
       border-bottom: 1px solid var(--card-border);
-      padding-bottom: 1rem;
+      padding-bottom: 0.85rem;
     }
 
     .modal-title { font-size: 1.15rem; font-weight: 800; color: white; }
     .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; }
-    .form-group { margin-bottom: 1.2rem; }
+    .form-group { margin-bottom: 1rem; }
     .form-label { display: block; font-size: 0.8rem; font-weight: 700; color: #CBD5E1; margin-bottom: 0.4rem; }
 
     .form-input, .form-select, .form-textarea {
@@ -528,6 +528,25 @@ export const adminDashboardHtml = `<!DOCTYPE html>
     .form-input:focus, .form-select:focus, .form-textarea:focus {
       outline: none;
       border-color: var(--primary);
+    }
+
+    .q-type-btn {
+      padding: 0.5rem 0.75rem;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--card-border);
+      background: #0E121B;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .q-type-btn.active {
+      background: #6366F1;
+      color: white;
+      border-color: #6366F1;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
     }
 
     @media (max-width: 1024px) {
@@ -720,6 +739,8 @@ export const adminDashboardHtml = `<!DOCTYPE html>
     let activeVideoSourceMode = 'youtube';
     let selectedVideoFileName = '';
     let selectedPdfFileName = '';
+    let currentTestQType = 'mcq';
+    let draftTestQuestions = [];
 
     let orders = [
       { id: '#1', customer: 'Dhairya Gulati', email: 'dgulati352@gmail.com', total: 150, status: 'PENDING', date: '2026-08-21', item: 'Accountancy Formula eBook' },
@@ -751,9 +772,9 @@ export const adminDashboardHtml = `<!DOCTYPE html>
     ];
 
     let tests = [
-      { id: 'TS-01', title: 'Class 12 Accountancy All India Board Mock 1', marks: 80, duration: '180 mins', attempts: 3420, avgScore: '82%', isFree: true },
-      { id: 'TS-02', title: 'Class 12 Business Studies Full Case Studies Mock', marks: 80, duration: '180 mins', attempts: 2890, avgScore: '79%', isFree: true },
-      { id: 'TS-03', title: 'Class 12 Macroeconomics & IED Comprehensive Mock', marks: 80, duration: '180 mins', attempts: 2150, avgScore: '76%', isFree: false },
+      { id: 'TS-01', title: 'Class 12 Accountancy All India Board Mock 1', marks: 80, duration: '180 mins', qCount: 34, attempts: 3420, avgScore: '82%', isFree: true },
+      { id: 'TS-02', title: 'Class 12 Business Studies Full Case Studies Mock', marks: 80, duration: '180 mins', qCount: 34, attempts: 2890, avgScore: '79%', isFree: true },
+      { id: 'TS-03', title: 'Class 12 Macroeconomics & IED Comprehensive Mock', marks: 80, duration: '180 mins', qCount: 34, attempts: 2150, avgScore: '76%', isFree: false },
     ];
 
     let promos = [
@@ -860,6 +881,90 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       }
     }
 
+    function setQuestionBuilderType(type) {
+      currentTestQType = type;
+      document.querySelectorAll('.q-type-btn').forEach(function(b) { b.classList.remove('active'); });
+      const activeBtn = document.getElementById('qb-btn-' + type);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const box = document.getElementById('q-dynamic-fields');
+      if (!box) return;
+
+      if (type === 'mcq') {
+        box.innerHTML = '<div class="form-group"><label class="form-label">MCQ Question Statement</label><textarea id="q-mcq-text" rows="2" class="form-textarea" placeholder="e.g. In the absence of partnership deed, interest on partner loan is provided at what rate?"></textarea></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"><input type="text" id="q-mcq-a" class="form-input" placeholder="Option A: 6% p.a."><input type="text" id="q-mcq-b" class="form-input" placeholder="Option B: 10% p.a."><input type="text" id="q-mcq-c" class="form-input" placeholder="Option C: 12% p.a."><input type="text" id="q-mcq-d" class="form-input" placeholder="Option D: No interest"></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem;"><div class="form-group"><label class="form-label">Correct Option</label><select id="q-mcq-ans" class="form-select"><option value="A">Option A</option><option value="B">Option B</option><option value="C">Option C</option><option value="D">Option D</option></select></div><div class="form-group"><label class="form-label">Marks</label><input type="number" id="q-marks" class="form-input" value="1"></div></div>';
+      } else if (type === 'tf') {
+        box.innerHTML = '<div class="form-group"><label class="form-label">True / False Statement</label><textarea id="q-tf-text" rows="2" class="form-textarea" placeholder="e.g. Principles of management are rigid prescriptions like pure scientific principles."></textarea></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Correct Answer</label><select id="q-tf-ans" class="form-select"><option value="True">✓ TRUE</option><option value="False">✕ FALSE</option></select></div><div class="form-group"><label class="form-label">Marks</label><input type="number" id="q-marks" class="form-input" value="1"></div></div>';
+      } else if (type === 'ar') {
+        box.innerHTML = '<div class="form-group"><label class="form-label">Assertion Statement (A)</label><textarea id="q-ar-a" rows="2" class="form-textarea" placeholder="e.g. Depreciation on fixed assets is added back in Cash Flow Operating Activities."></textarea></div><div class="form-group"><label class="form-label">Reason Statement (R)</label><textarea id="q-ar-r" rows="2" class="form-textarea" placeholder="e.g. Depreciation is a non-cash expense and does not involve cash outflow."></textarea></div><div class="form-group"><label class="form-label">Correct Standard Choice</label><select id="q-ar-ans" class="form-select"><option value="both_true_correct_explanation">(a) Both (A) and (R) are true and (R) is correct explanation of (A)</option><option value="both_true_not_correct_explanation">(b) Both (A) and (R) are true but (R) is NOT correct explanation</option><option value="a_true_r_false">(c) Assertion (A) is true but Reason (R) is false</option><option value="a_false_r_true">(d) Assertion (A) is false but Reason (R) is true</option></select></div>';
+      } else if (type === 'match') {
+        box.innerHTML = '<div class="form-group"><label class="form-label">Matching Question Title</label><input type="text" id="q-match-text" class="form-input" placeholder="Match Column I with Column II definitions:"></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;"><input type="text" id="q-m-a" class="form-input" placeholder="Col I: (A) Planning"><input type="text" id="q-m-1" class="form-input" placeholder="Col II: (i) Goal Setting"><input type="text" id="q-m-b" class="form-input" placeholder="Col I: (B) Organising"><input type="text" id="q-m-2" class="form-input" placeholder="Col II: (ii) Grouping Activities"><input type="text" id="q-m-c" class="form-input" placeholder="Col I: (C) Directing"><input type="text" id="q-m-3" class="form-input" placeholder="Col II: (iii) Leading & Motivating"><input type="text" id="q-m-d" class="form-input" placeholder="Col I: (D) Controlling"><input type="text" id="q-m-4" class="form-input" placeholder="Col II: (iv) Performance Comparison"></div><div class="form-group" style="margin-top:0.75rem;"><label class="form-label">Correct Match Sequence Code</label><input type="text" id="q-match-code" class="form-input" value="A-i, B-ii, C-iii, D-iv" placeholder="e.g. A-i, B-ii, C-iii, D-iv"></div>';
+      }
+    }
+
+    function addDraftQuestion() {
+      let qObj = { type: currentTestQType, marks: 1 };
+      if (currentTestQType === 'mcq') {
+        const text = document.getElementById('q-mcq-text') ? document.getElementById('q-mcq-text').value : '';
+        if (!text) { alert('Please enter question statement'); return; }
+        qObj.statement = text;
+        qObj.ans = document.getElementById('q-mcq-ans') ? document.getElementById('q-mcq-ans').value : 'A';
+      } else if (currentTestQType === 'tf') {
+        const text = document.getElementById('q-tf-text') ? document.getElementById('q-tf-text').value : '';
+        if (!text) { alert('Please enter statement'); return; }
+        qObj.statement = text;
+        qObj.ans = document.getElementById('q-tf-ans') ? document.getElementById('q-tf-ans').value : 'True';
+      } else if (currentTestQType === 'ar') {
+        const a = document.getElementById('q-ar-a') ? document.getElementById('q-ar-a').value : '';
+        const r = document.getElementById('q-ar-r') ? document.getElementById('q-ar-r').value : '';
+        if (!a || !r) { alert('Please enter both Assertion and Reason statements'); return; }
+        qObj.statement = '(A) ' + a + ' | (R) ' + r;
+        qObj.ans = 'CBSE Standard Choice';
+      } else if (currentTestQType === 'match') {
+        const m = document.getElementById('q-match-text') ? document.getElementById('q-match-text').value : 'Match Columns';
+        qObj.statement = m;
+        qObj.ans = document.getElementById('q-match-code') ? document.getElementById('q-match-code').value : 'A-i, B-ii';
+      }
+
+      draftTestQuestions.push(qObj);
+      showToast('Added ' + currentTestQType.toUpperCase() + ' question (Total: ' + draftTestQuestions.length + ')');
+      renderDraftQuestionsList();
+    }
+
+    function renderDraftQuestionsList() {
+      const listEl = document.getElementById('draft-questions-list');
+      const countEl = document.getElementById('q-counter-badge');
+      if (countEl) countEl.innerText = draftTestQuestions.length + ' Questions Added';
+      if (!listEl) return;
+
+      if (draftTestQuestions.length === 0) {
+        listEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:0.75rem;">No questions added yet.</div>';
+        return;
+      }
+
+      let html = '';
+      for (let i = 0; i < draftTestQuestions.length; i++) {
+        const q = draftTestQuestions[i];
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; background:#0E121B; padding:0.5rem 0.75rem; border-radius:8px; margin-bottom:0.35rem; border:1px solid var(--card-border); font-size:0.75rem;"><div><span style="color:#818CF8; font-weight:800; text-transform:uppercase;">[' + q.type + ']</span> <span style="color:#E2E8F0;">' + (q.statement.slice(0, 45)) + '...</span></div><button type="button" onclick="removeDraftQ(' + i + ')" style="background:transparent; border:none; color:#EF4444; cursor:pointer; font-weight:700;">✕</button></div>';
+      }
+      listEl.innerHTML = html;
+    }
+
+    function removeDraftQ(idx) {
+      draftTestQuestions.splice(idx, 1);
+      renderDraftQuestionsList();
+    }
+
+    function loadSampleQuestions() {
+      draftTestQuestions = [
+        { type: 'mcq', statement: 'Interest on partner loan in absence of deed?', ans: '6% p.a.', marks: 1 },
+        { type: 'tf', statement: 'Management principles are rigid prescriptions.', ans: 'False', marks: 1 },
+        { type: 'ar', statement: 'Assertion: Depreciation is added back. Reason: Non-cash expense.', ans: 'Both True', marks: 1 },
+        { type: 'match', statement: 'Match Functions of Management (Planning, Organising, Directing, Controlling)', ans: 'A-i, B-ii, C-iii, D-iv', marks: 2 }
+      ];
+      renderDraftQuestionsList();
+      showToast('Loaded 4 Sample Board Questions!');
+    }
+
     function openModal(type) {
       const modal = document.getElementById('action-modal');
       const content = document.getElementById('modal-box-content');
@@ -872,7 +977,9 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       } else if (type === 'add-book') {
         content.innerHTML = '<div class="modal-header"><h3 class="modal-title">Upload & Publish Book / PDF</h3><button class="close-btn" onclick="closeModal()">✕</button></div><form onsubmit="submitNewBook(event)"><div class="form-group"><label class="form-label">Book / Study Material Title</label><input type="text" id="new-bk-title" class="form-input" required placeholder="e.g. Class 12 Accountancy Board Master Guide 2026"></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Author / Faculty</label><input type="text" id="new-bk-author" class="form-input" required value="Prof. S. K. Sharma"></div><div class="form-group"><label class="form-label">Subject</label><select id="new-bk-subject" class="form-select"><option>Accountancy</option><option>Business Studies</option><option>Economics</option><option>Commercial Law</option></select></div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Selling Price (₹)</label><input type="number" id="new-bk-price" class="form-input" required value="449"></div><div class="form-group"><label class="form-label">Format & Total Pages</label><input type="text" id="new-bk-format" class="form-input" value="Paperback + eBook (350 pages)"></div></div><div class="form-group"><label class="form-label">Attach PDF Document</label><div style="border:2px dashed var(--card-border); border-radius:12px; padding:1rem; text-align:center; background:#0E121B;"><div id="pdf-chosen-name" style="font-size:0.8rem; font-weight:700; color:#818CF8; margin-bottom:0.3rem;">Choose PDF Document (.pdf)</div><input type="file" id="local-pdf-input" accept=".pdf" style="display:none;" onchange="handleLocalPdfSelected(event)"><label for="local-pdf-input" class="btn-primary" style="cursor:pointer; display:inline-block; font-size:0.75rem;">Browse PDF File</label></div></div><div class="form-group" style="background:#0E121B; padding:0.75rem; border-radius:10px; border:1px solid rgba(16, 185, 129, 0.3);"><span style="color:#34D399; font-size:0.75rem; font-weight:700;">✓ 5-Page Sample Viewer will be auto-configured (Pages 1–5 Free, Pages 6+ Locked).</span></div><button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Book to Store</button></form>';
       } else if (type === 'add-test') {
-        content.innerHTML = '<div class="modal-header"><h3 class="modal-title">Create CBT Mock Test Series</h3><button class="close-btn" onclick="closeModal()">✕</button></div><form onsubmit="submitNewTest(event)"><div class="form-group"><label class="form-label">Test Paper Title</label><input type="text" id="new-ts-title" class="form-input" required placeholder="e.g. Class 12 Accountancy Board Full Mock 2"></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Duration</label><input type="text" id="new-ts-dur" class="form-input" value="180 mins"></div><div class="form-group"><label class="form-label">Total Marks</label><input type="number" id="new-ts-marks" class="form-input" value="80"></div></div><button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Test Paper</button></form>';
+        content.innerHTML = '<div class="modal-header"><h3 class="modal-title">Create CBT Mock Test Series & Question Bank</h3><button class="close-btn" onclick="closeModal()">✕</button></div><form onsubmit="submitNewTest(event)"><div class="form-group"><label class="form-label">Test Paper Title</label><input type="text" id="new-ts-title" class="form-input" required placeholder="e.g. Class 12 Accountancy Board Full Mock 2"></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Duration</label><input type="text" id="new-ts-dur" class="form-input" value="180 mins"></div><div class="form-group"><label class="form-label">Total Marks</label><input type="number" id="new-ts-marks" class="form-input" value="80"></div></div><div style="border-top:1px solid var(--card-border); padding-top:1rem; margin-top:1rem;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;"><span style="font-size:0.82rem; font-weight:800; color:#818CF8;">➕ Add Questions to Exam Paper</span><button type="button" onclick="loadSampleQuestions()" class="view-all-btn" style="font-size:0.72rem;">✨ Load 4 Sample Questions</button></div><div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:0.4rem; margin-bottom:0.85rem;"><button type="button" id="qb-btn-mcq" class="q-type-btn active" onclick="setQuestionBuilderType(\\'mcq\\')">🔘 MCQ</button><button type="button" id="qb-btn-tf" class="q-type-btn" onclick="setQuestionBuilderType(\\'tf\\')">⚖️ T/F</button><button type="button" id="qb-btn-ar" class="q-type-btn" onclick="setQuestionBuilderType(\\'ar\\')">🧩 A&R</button><button type="button" id="qb-btn-match" class="q-type-btn" onclick="setQuestionBuilderType(\\'match\\')">🔗 Match</button></div><div id="q-dynamic-fields" style="background:#0E121B; padding:0.9rem; border-radius:12px; border:1px solid var(--card-border); margin-bottom:0.85rem;"></div><button type="button" onclick="addDraftQuestion()" class="btn-primary" style="width:100%; margin-bottom:1rem; font-size:0.78rem;">+ Insert Question into Test</button><div style="margin-bottom:0.5rem; display:flex; justify-content:space-between;"><span style="font-size:0.75rem; font-weight:700; color:#CBD5E1;">Questions in Paper:</span><span id="q-counter-badge" style="font-size:0.75rem; color:#34D399; font-weight:800;">0 Questions Added</span></div><div id="draft-questions-list" style="max-height:140px; overflow-y:auto;"></div></div><button type="submit" class="btn-primary" style="width:100%; padding:0.75rem; margin-top:1rem;">Publish Test Paper</button></form>';
+        setQuestionBuilderType('mcq');
+        renderDraftQuestionsList();
       } else if (type === 'add-banner') {
         content.innerHTML = '<div class="modal-header"><h3 class="modal-title">Upload Promotional Banner</h3><button class="close-btn" onclick="closeModal()">✕</button></div><form onsubmit="submitNewBanner(event)"><div class="form-group"><label class="form-label">Banner Campaign Title</label><input type="text" id="new-bn-title" class="form-input" required placeholder="e.g. Board Toppers Fast-Track Batch"></div><div class="form-group"><label class="form-label">Target Page Link</label><input type="text" id="new-bn-link" class="form-input" required value="/courses"></div><button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Activate Banner</button></form>';
       } else if (type === 'add-promo') {
@@ -959,18 +1066,21 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       const title = document.getElementById('new-ts-title').value;
       const dur = document.getElementById('new-ts-dur').value || '180 mins';
       const marks = Number(document.getElementById('new-ts-marks').value) || 80;
+      const qCount = draftTestQuestions.length > 0 ? draftTestQuestions.length : 34;
 
       tests.unshift({
         id: 'TS-0' + (tests.length + 1),
         title: title,
         marks: marks,
         duration: dur,
+        qCount: qCount,
         attempts: 0,
         avgScore: 'N/A',
         isFree: true
       });
       closeModal();
-      showToast('Mock Test Series created successfully!');
+      showToast('Mock Test Series created with ' + qCount + ' questions!');
+      draftTestQuestions = [];
       renderCurrentTab();
     }
 
@@ -1072,9 +1182,9 @@ export const adminDashboardHtml = `<!DOCTYPE html>
         let rows = '';
         for (let i = 0; i < tests.length; i++) {
           const t = tests[i];
-          rows += '<tr><td class="customer-name">' + t.title + '</td><td>' + t.marks + ' Marks • ' + t.duration + '</td><td>' + t.attempts + ' students</td><td style="color:#34D399; font-weight:700;">' + t.avgScore + '</td><td><span class="status-badge ' + (t.isFree ? 'status-delivered' : 'status-pending') + '">' + (t.isFree ? 'FREE' : 'VIP LOCKED') + '</span></td></tr>';
+          rows += '<tr><td class="customer-name">' + t.title + '</td><td>' + t.marks + ' Marks • ' + t.duration + '</td><td><span style="color:#818CF8; font-weight:800;">' + (t.qCount || 34) + ' Questions</span></td><td>' + t.attempts + ' students</td><td style="color:#34D399; font-weight:700;">' + t.avgScore + '</td><td><span class="status-badge ' + (t.isFree ? 'status-delivered' : 'status-pending') + '">' + (t.isFree ? 'FREE' : 'VIP LOCKED') + '</span></td></tr>';
         }
-        container.innerHTML = '<div class="table-card"><div class="table-header"><div class="table-title"><span>📝 CBT Mock Test Series (' + tests.length + ')</span></div><button class="btn-primary" onclick="openModal(\\'add-test\\')">+ Create Test</button></div><div style="overflow-x: auto;"><table class="data-table"><thead><tr><th>TEST PAPER TITLE</th><th>MARKS & DURATION</th><th>ATTEMPTS</th><th>AVG SCORE</th><th>ACCESS</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+        container.innerHTML = '<div class="table-card"><div class="table-header"><div class="table-title"><span>📝 CBT Mock Test Series (' + tests.length + ')</span></div><button class="btn-primary" onclick="openModal(\\'add-test\\')">+ Create Test</button></div><div style="overflow-x: auto;"><table class="data-table"><thead><tr><th>TEST PAPER TITLE</th><th>MARKS & DURATION</th><th>QUESTIONS</th><th>ATTEMPTS</th><th>AVG SCORE</th><th>ACCESS</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
       } else if (currentTab === 'memberships') {
         container.innerHTML = '<div class="metrics-grid"><div class="metric-card"><div class="metric-icon-box icon-purple">👑</div><div class="metric-info"><h3>₹999</h3><p>Monthly Pro Pass (280 Users)</p></div></div><div class="metric-card"><div class="metric-icon-box icon-blue">⚡</div><div class="metric-info"><h3>₹2,499</h3><p>3-Month Booster (410 Users)</p></div></div><div class="metric-card"><div class="metric-icon-box icon-orange">🏆</div><div class="metric-info"><h3>₹6,999</h3><p>Annual VIP Pass (190 Users)</p></div></div><div class="metric-card"><div class="metric-icon-box icon-green" style="font-weight:800; font-size:1.1rem;">Rs</div><div class="metric-info"><h3>₹26.3L</h3><p>Gross Subscriptions</p></div></div></div><div class="table-card" style="padding:1.75rem;"><div class="table-title" style="margin-bottom:1rem;"><span>👑 Instant Student VIP Pass Grant Tool</span></div><p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">Enter any student email to unlock all video lectures, mock test simulators, and handwritten notes PDF.</p><div style="display:flex; gap:0.75rem; flex-wrap:wrap;"><input type="email" id="grant-email-input" class="form-input" style="flex:1; min-width:240px;" placeholder="e.g. student@example.com"><select id="grant-tier-select" class="form-select" style="width:200px;"><option>Annual VIP Topper Plan</option><option>Monthly Pro Pass</option><option>3-Month Booster</option></select><button class="btn-primary" onclick="grantVipPass()">Grant Membership</button></div></div>';
       } else if (currentTab === 'banners') {
