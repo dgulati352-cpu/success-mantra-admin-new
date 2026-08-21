@@ -343,6 +343,7 @@ export const adminDashboardHtml = `<!DOCTYPE html>
     .icon-green { color: #10B981; background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); }
     .icon-orange { color: #F59E0B; }
     .icon-purple { color: #A78BFA; }
+    .icon-red { color: #EF4444; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); }
 
     .metric-info h3 {
       font-size: 1.7rem;
@@ -402,6 +403,20 @@ export const adminDashboardHtml = `<!DOCTYPE html>
     }
 
     .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-danger {
+      padding: 0.5rem 1.1rem;
+      border-radius: 8px;
+      background: #DC2626;
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-danger:hover { background: #B91C1C; }
 
     .view-all-btn {
       padding: 0.45rem 1rem;
@@ -467,6 +482,13 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       background: rgba(16, 185, 129, 0.15);
       color: #34D399;
       border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-live {
+      background: rgba(239, 68, 68, 0.18);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      animation: pulse 1.8s infinite;
     }
 
     .status-shipped {
@@ -618,6 +640,16 @@ export const adminDashboardHtml = `<!DOCTYPE html>
         </li>
 
         <li>
+          <a class="nav-item" id="nav-streams" onclick="switchTab('streams')">
+            <div class="nav-left">
+              <span>📡</span>
+              <span>Live Streams</span>
+            </div>
+            <span class="nav-badge" style="background:#DC2626;" id="live-streams-badge">1 LIVE</span>
+          </a>
+        </li>
+
+        <li>
           <a class="nav-item" id="nav-books" onclick="switchTab('books')">
             <div class="nav-left">
               <span>📚</span>
@@ -758,6 +790,12 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       { id: 'LEC-04', title: 'National Income: Value Added & Income Methods', grade: 'Class 12', subject: 'Macroeconomics', instructor: 'Prof. R. C. Gupta', duration: '62 mins', isFree: false, views: '41.2K' },
     ];
 
+    let streams = [
+      { id: 'STR-01', title: 'Class 12 Boards Accountancy: Partnership Doubt Solving & Live Practice', instructor: 'Prof. S. K. Sharma', grade: 'Class 12', subject: 'Accountancy', time: 'Today, 8:00 PM IST', status: 'LIVE', platform: 'YouTube Live', viewers: 342, isFree: true },
+      { id: 'STR-02', title: 'Business Studies Case Studies Solving Masterclass (Fayol Principles)', instructor: 'Dr. Neha Verma', grade: 'Class 12', subject: 'Business Studies', time: 'Tomorrow, 6:30 PM IST', status: 'SCHEDULED', platform: 'Zoom Meeting', viewers: 180, isFree: false },
+      { id: 'STR-03', title: 'Macroeconomics National Income 3-Method Numerical Marathon', instructor: 'Prof. R. C. Gupta', grade: 'Class 12', subject: 'Economics', time: 'Aug 20, 7:00 PM IST', status: 'ENDED', platform: 'YouTube Live', viewers: 1250, isFree: true }
+    ];
+
     let books = [
       { id: 'BK-01', title: 'Class 12 Accountancy Board Master Guide 2026', author: 'Prof. S. K. Sharma', price: 499, sales: 1450, format: 'Paperback + eBook', pages: 420 },
       { id: 'BK-02', title: 'Business Studies Toppers Handwritten Case Studies', author: 'Dr. Neha Verma', price: 399, sales: 1120, format: 'Handwritten Notes', pages: 280 },
@@ -805,6 +843,15 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       if (lec) {
         lec.isFree = !lec.isFree;
         showToast(lec.title + ' is now ' + (lec.isFree ? 'Free Preview Demo' : 'VIP Locked'));
+        renderCurrentTab();
+      }
+    }
+
+    function toggleStreamStatus(streamId) {
+      const s = streams.find(function(item) { return item.id === streamId; });
+      if (s) {
+        s.status = s.status === 'SCHEDULED' ? 'LIVE' : s.status === 'LIVE' ? 'ENDED' : 'SCHEDULED';
+        showToast('Stream ' + s.title + ' status is now ' + s.status);
         renderCurrentTab();
       }
     }
@@ -967,6 +1014,8 @@ export const adminDashboardHtml = `<!DOCTYPE html>
         content.innerHTML = '<div class="modal-header"><h3 class="modal-title">Create Manual Order</h3><button class="close-btn" onclick="closeModal()">✕</button></div><form onsubmit="submitNewOrder(event)"><div class="form-group"><label class="form-label">Customer Name</label><input type="text" id="new-ord-cust" class="form-input" required placeholder="e.g. Dhairya Gulati"></div><div class="form-group"><label class="form-label">Item / Material</label><input type="text" id="new-ord-item" class="form-input" required placeholder="e.g. Class 12 Accountancy Guide"></div><div class="form-group"><label class="form-label">Total Amount (₹)</label><input type="number" id="new-ord-total" class="form-input" required value="350"></div><button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Create Order</button></form>';
       } else if (type === 'add-lecture') {
         content.innerHTML = '<div class="modal-header"><h3 class="modal-title">Upload Video Lecture</h3><button class="close-btn" onclick="closeModal()">✕</button></div><form onsubmit="submitNewLecture(event)"><div class="form-group"><label class="form-label">Video Source Type</label><div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.5rem; margin-bottom:0.75rem;"><button type="button" id="tab-yt" class="btn-primary" style="background:#DC2626; padding:0.45rem; font-size:0.75rem;" onclick="setVideoSourceMode(\\'youtube\\')">🔴 YouTube / Vimeo</button><button type="button" id="tab-file" class="view-all-btn" style="padding:0.45rem; font-size:0.75rem;" onclick="setVideoSourceMode(\\'file\\')">📁 Recorded Video File</button><button type="button" id="tab-cloud" class="view-all-btn" style="padding:0.45rem; font-size:0.75rem;" onclick="setVideoSourceMode(\\'cloud\\')">☁️ Cloud / AWS S3</button></div></div><div class="form-group" id="yt-url-group"><label class="form-label">YouTube / Vimeo Embed URL</label><input type="text" id="new-lec-url" class="form-input" placeholder="https://www.youtube.com/watch?v=... or embed URL" value="https://www.youtube.com/embed/dQw4w9WgXcQ"><span style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem; display:block;">Auto-converts standard watch URLs into responsive embeds.</span></div><div class="form-group" id="file-upload-group" style="display:none;"><label class="form-label">Choose Recorded Video File (.mp4, .mov, .webm, .mkv)</label><div style="border:2px dashed var(--card-border); border-radius:12px; padding:1.2rem; text-align:center; background:#0E121B;"><div style="font-size:1.5rem; margin-bottom:0.3rem;">🎥</div><div id="file-chosen-name" style="font-size:0.8rem; font-weight:700; color:#818CF8; margin-bottom:0.4rem;">Select local video recording</div><input type="file" id="local-video-input" accept="video/*" style="display:none;" onchange="handleLocalVideoSelected(event)"><label for="local-video-input" class="btn-primary" style="cursor:pointer; display:inline-block; font-size:0.75rem;">Browse Recorded Video</label></div></div><div class="form-group"><label class="form-label">Lecture Topic / Title</label><input type="text" id="new-lec-title" class="form-input" required placeholder="e.g. Partnership Appropriation Account"></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Subject</label><select id="new-lec-sub" class="form-select"><option>Accountancy</option><option>Business Studies</option><option>Macroeconomics</option><option>Commercial Law</option></select></div><div class="form-group"><label class="form-label">Duration</label><input type="text" id="new-lec-dur" class="form-input" placeholder="e.g. 52 mins" value="50 mins"></div></div><div class="form-group" style="background:#0E121B; padding:0.75rem; border-radius:10px; border:1px solid var(--card-border);"><label style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-weight:700; color:white; cursor:pointer;"><input type="checkbox" id="new-lec-free" checked><span>Free Preview Demo (Unlocked for all students)</span></label></div><button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Video Lecture</button></form>';
+      } else if (type === 'add-stream') {
+        content.innerHTML = '<div class="modal-header"><h3 class="modal-title">Schedule Live Classroom Stream</h3><button class="close-btn" onclick="closeModal()">✕</button></div><form onsubmit="submitNewStream(event)"><div class="form-group"><label class="form-label">Stream Topic / Title</label><input type="text" id="new-str-title" class="form-input" required placeholder="e.g. Class 12 Boards Marathon: Partnership Full Revision"></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Faculty / Speaker</label><input type="text" id="new-str-faculty" class="form-input" required value="Prof. S. K. Sharma"></div><div class="form-group"><label class="form-label">Subject</label><select id="new-str-sub" class="form-select"><option>Accountancy</option><option>Business Studies</option><option>Economics</option><option>Commercial Law</option></select></div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Platform</label><select id="new-str-platform" class="form-select"><option>YouTube Live</option><option>Zoom Meeting</option><option>OBS / RTMP</option></select></div><div class="form-group"><label class="form-label">Schedule Time</label><input type="text" id="new-str-time" class="form-input" value="Today, 8:00 PM IST"></div></div><div class="form-group"><label class="form-label">Stream Embed URL or Zoom Link</label><input type="text" id="new-str-url" class="form-input" placeholder="https://www.youtube.com/embed/... or Zoom Room Link" value="https://www.youtube.com/embed/live_stream?channel=UCsuccessmantra"></div><div class="form-group"><label class="form-label">Initial State</label><select id="new-str-status" class="form-select"><option value="LIVE">🔴 Go Live Immediately</option><option value="SCHEDULED">⏳ Scheduled Batch</option></select></div><button type="submit" class="btn-primary" style="width:100%; padding:0.75rem; background:#DC2626;">Broadcast / Schedule Stream</button></form>';
       } else if (type === 'add-book') {
         content.innerHTML = '<div class="modal-header"><h3 class="modal-title">Upload & Publish Book / PDF</h3><button class="close-btn" onclick="closeModal()">✕</button></div><form onsubmit="submitNewBook(event)"><div class="form-group"><label class="form-label">Book / Study Material Title</label><input type="text" id="new-bk-title" class="form-input" required placeholder="e.g. Class 12 Accountancy Board Master Guide 2026"></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Author / Faculty</label><input type="text" id="new-bk-author" class="form-input" required value="Prof. S. K. Sharma"></div><div class="form-group"><label class="form-label">Subject</label><select id="new-bk-subject" class="form-select"><option>Accountancy</option><option>Business Studies</option><option>Economics</option><option>Commercial Law</option></select></div></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;"><div class="form-group"><label class="form-label">Selling Price (₹)</label><input type="number" id="new-bk-price" class="form-input" required value="449"></div><div class="form-group"><label class="form-label">Format & Total Pages</label><input type="text" id="new-bk-format" class="form-input" value="Paperback + eBook (350 pages)"></div></div><div class="form-group"><label class="form-label">Attach PDF Document</label><div style="border:2px dashed var(--card-border); border-radius:12px; padding:1rem; text-align:center; background:#0E121B;"><div id="pdf-chosen-name" style="font-size:0.8rem; font-weight:700; color:#818CF8; margin-bottom:0.3rem;">Choose PDF Document (.pdf)</div><input type="file" id="local-pdf-input" accept=".pdf" style="display:none;" onchange="handleLocalPdfSelected(event)"><label for="local-pdf-input" class="btn-primary" style="cursor:pointer; display:inline-block; font-size:0.75rem;">Browse PDF File</label></div></div><div class="form-group" style="background:#0E121B; padding:0.75rem; border-radius:10px; border:1px solid rgba(16, 185, 129, 0.3);"><span style="color:#34D399; font-size:0.75rem; font-weight:700;">✓ 5-Page Sample Viewer will be auto-configured (Pages 1–5 Free, Pages 6+ Locked).</span></div><button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Book to Store</button></form>';
       } else if (type === 'add-test') {
@@ -1030,6 +1079,32 @@ export const adminDashboardHtml = `<!DOCTYPE html>
       });
       closeModal();
       showToast('Video Lecture published (' + (isFree ? 'Free Preview' : 'VIP Locked') + ')!');
+      renderCurrentTab();
+    }
+
+    function submitNewStream(e) {
+      e.preventDefault();
+      const title = document.getElementById('new-str-title').value;
+      const faculty = document.getElementById('new-str-faculty').value || 'Prof. S. K. Sharma';
+      const sub = document.getElementById('new-str-sub').value || 'Accountancy';
+      const platform = document.getElementById('new-str-platform').value || 'YouTube Live';
+      const time = document.getElementById('new-str-time').value || 'Today, 8:00 PM IST';
+      const status = document.getElementById('new-str-status').value || 'SCHEDULED';
+
+      streams.unshift({
+        id: 'STR-0' + (streams.length + 1),
+        title: title,
+        instructor: faculty,
+        grade: 'Class 12',
+        subject: sub,
+        time: time,
+        status: status,
+        platform: platform,
+        viewers: status === 'LIVE' ? 1 : 0,
+        isFree: true
+      });
+      closeModal();
+      showToast('Live stream "' + title + '" scheduled successfully!');
       renderCurrentTab();
     }
 
@@ -1114,6 +1189,7 @@ export const adminDashboardHtml = `<!DOCTYPE html>
         'orders': 'Orders Management',
         'customers': 'Customers & Students Directory',
         'lectures': 'Video Lectures & Masterclasses',
+        'streams': 'Live Streams & Interactive Classroom',
         'books': 'Books & Study Material Catalog',
         'tests': 'CBT Mock Test Series',
         'memberships': 'Memberships & VIP Passes',
@@ -1164,6 +1240,15 @@ export const adminDashboardHtml = `<!DOCTYPE html>
           rows += '<tr><td><div class="customer-name">' + l.title + '</div><div style="font-size:0.75rem; color:#818CF8; font-weight:700;">' + l.subject + '</div></td><td>' + l.grade + '</td><td>' + l.instructor + '</td><td>' + l.duration + ' • ' + l.views + '</td><td><span class="status-badge ' + (l.isFree ? 'status-delivered' : 'status-pending') + '" onclick="toggleLectureLock(\\'' + l.id + '\\')">' + (l.isFree ? 'FREE DEMO' : 'VIP LOCKED') + '</span></td></tr>';
         }
         container.innerHTML = '<div class="table-card"><div class="table-header"><div class="table-title"><span>🎥 HD Video Lectures & Masterclasses (' + lectures.length + ')</span></div><button class="btn-primary" onclick="openModal(\\'add-lecture\\')">+ Upload Lecture</button></div><div style="overflow-x: auto;"><table class="data-table"><thead><tr><th>TOPIC & SUBJECT</th><th>GRADE</th><th>INSTRUCTOR</th><th>DURATION & VIEWS</th><th>ACCESS LOCK (CLICK TO TOGGLE)</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+      } else if (currentTab === 'streams') {
+        let liveCount = 0;
+        for (let i = 0; i < streams.length; i++) { if (streams[i].status === 'LIVE') liveCount++; }
+        let rows = '';
+        for (let i = 0; i < streams.length; i++) {
+          const s = streams[i];
+          rows += '<tr><td><div class="customer-name">' + s.title + '</div><div style="font-size:0.75rem; color:#818CF8; font-weight:700;">' + s.grade + ' • ' + s.subject + '</div></td><td style="font-weight:700; color:white;">' + s.instructor + '</td><td style="color:var(--text-muted); font-size:0.8rem;">' + s.time + '</td><td><span class="status-badge status-shipped">' + s.platform + '</span></td><td style="font-weight:800; color:#38BDF8;">' + s.viewers + ' viewers</td><td><span class="status-badge ' + (s.status === 'LIVE' ? 'status-live' : s.status === 'SCHEDULED' ? 'status-pending' : 'status-delivered') + '" onclick="toggleStreamStatus(\\'' + s.id + '\\')" title="Click to change state">' + (s.status === 'LIVE' ? '🔴 LIVE NOW' : s.status) + '</span></td></tr>';
+        }
+        container.innerHTML = '<div class="metrics-grid"><div class="metric-card"><div class="metric-icon-box icon-red">📡</div><div class="metric-info"><h3>' + liveCount + '</h3><p>Active Live Streams</p></div></div><div class="metric-card"><div class="metric-icon-box icon-blue">👥</div><div class="metric-info"><h3>1,772</h3><p>Live Class Attendees</p></div></div><div class="metric-card"><div class="metric-icon-box icon-orange">⏱️</div><div class="metric-info"><h3>' + (streams.length - liveCount) + '</h3><p>Upcoming Scheduled</p></div></div><div class="metric-card"><div class="metric-icon-box icon-green">⚡</div><div class="metric-info"><h3>99.8%</h3><p>Stream Uptime</p></div></div></div><div class="table-card"><div class="table-header"><div class="table-title"><span>📡 Live Classroom Streams & Broadcasts (' + streams.length + ')</span></div><button class="btn-danger" onclick="openModal(\\'add-stream\\')">🔴 Schedule Live Stream</button></div><div style="overflow-x: auto;"><table class="data-table"><thead><tr><th>STREAM TOPIC & SUBJECT</th><th>FACULTY</th><th>SCHEDULE TIME</th><th>PLATFORM</th><th>ATTENDEES</th><th>STATUS (CLICK TO TOGGLE)</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
       } else if (currentTab === 'books') {
         let rows = '';
         for (let i = 0; i < books.length; i++) {
