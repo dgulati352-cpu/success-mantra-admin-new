@@ -54,7 +54,7 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// ─── 5. Dark Admin Control Panel UI (Exact match to specified design) ───
+// ─── 5. Complete, Fully Interactive Dark Admin Control Panel ───
 const getDashboardHtml = () => `
 <!DOCTYPE html>
 <html lang="en">
@@ -152,6 +152,7 @@ const getDashboardHtml = () => `
       gap: 0.35rem;
       list-style: none;
       flex: 1;
+      overflow-y: auto;
     }
 
     .nav-item {
@@ -333,7 +334,7 @@ const getDashboardHtml = () => `
       box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
     }
 
-    /* ─── Toast Notifications (Top-Right Floating) ─── */
+    /* ─── Toast Notifications ─── */
     .toast-container {
       position: fixed;
       top: 1.5rem;
@@ -411,7 +412,7 @@ const getDashboardHtml = () => `
       align-items: center;
       justify-content: center;
       font-size: 1.4rem;
-      shrink: 0;
+      flex-shrink: 0;
     }
 
     .icon-blue { color: #38BDF8; }
@@ -447,6 +448,8 @@ const getDashboardHtml = () => `
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--card-border);
+      gap: 1rem;
+      flex-wrap: wrap;
     }
 
     .table-title {
@@ -460,6 +463,28 @@ const getDashboardHtml = () => `
 
     .table-title .flame {
       color: #6366F1;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-primary {
+      padding: 0.5rem 1.1rem;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
     }
 
     .view-all-btn {
@@ -531,6 +556,13 @@ const getDashboardHtml = () => `
       font-weight: 800;
       letter-spacing: 0.04em;
       text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .status-badge:hover {
+      filter: brightness(1.2);
+      transform: scale(1.04);
     }
 
     .status-pending {
@@ -551,6 +583,80 @@ const getDashboardHtml = () => `
       border: 1px solid rgba(56, 189, 248, 0.3);
     }
 
+    /* Modal Form Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-box {
+      background: #141824;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      max-width: 550px;
+      width: 100%;
+      padding: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1rem;
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: white;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #CBD5E1;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      background: #0E121B;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0.65rem 0.9rem;
+      color: white;
+      font-family: var(--font);
+      font-size: 0.85rem;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
     /* Responsive */
     @media (max-width: 1024px) {
       .metrics-grid { grid-template-columns: repeat(2, 1fr); }
@@ -569,12 +675,12 @@ const getDashboardHtml = () => `
 </head>
 <body>
 
-  <!-- ─── Toast Notifications (Exact match to top right) ─── -->
-  <div class="toast-container">
+  <!-- ─── Toast Notification Container ─── -->
+  <div class="toast-container" id="toast-box">
     <div class="toast-pill">
       <span class="check">✓</span> Database connected ✓
     </div>
-    <div class="toast-pill">
+    <div class="toast-pill" id="order-count-toast">
       <span class="check">✓</span> 6 order(s) found
     </div>
   </div>
@@ -593,7 +699,7 @@ const getDashboardHtml = () => `
       <!-- Nav Items -->
       <ul class="nav-list">
         <li>
-          <a class="nav-item active" onclick="switchTab('dashboard')">
+          <a class="nav-item active" id="nav-dashboard" onclick="switchTab('dashboard')">
             <div class="nav-left">
               <span>📊</span>
               <span>Dashboard</span>
@@ -602,17 +708,17 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('orders')">
+          <a class="nav-item" id="nav-orders" onclick="switchTab('orders')">
             <div class="nav-left">
               <span>🛍️</span>
               <span>Orders</span>
             </div>
-            <span class="nav-badge">4</span>
+            <span class="nav-badge" id="pending-badge">4</span>
           </a>
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('customers')">
+          <a class="nav-item" id="nav-customers" onclick="switchTab('customers')">
             <div class="nav-left">
               <span>👥</span>
               <span>Customers</span>
@@ -621,7 +727,7 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('lectures')">
+          <a class="nav-item" id="nav-lectures" onclick="switchTab('lectures')">
             <div class="nav-left">
               <span>🎥</span>
               <span>Video Lectures</span>
@@ -630,7 +736,7 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('books')">
+          <a class="nav-item" id="nav-books" onclick="switchTab('books')">
             <div class="nav-left">
               <span>📚</span>
               <span>Books & PDFs</span>
@@ -639,7 +745,7 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('tests')">
+          <a class="nav-item" id="nav-tests" onclick="switchTab('tests')">
             <div class="nav-left">
               <span>📝</span>
               <span>Test Series</span>
@@ -648,7 +754,7 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('memberships')">
+          <a class="nav-item" id="nav-memberships" onclick="switchTab('memberships')">
             <div class="nav-left">
               <span>👑</span>
               <span>Memberships</span>
@@ -657,7 +763,7 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('banners')">
+          <a class="nav-item" id="nav-banners" onclick="switchTab('banners')">
             <div class="nav-left">
               <span>🖼️</span>
               <span>Banners</span>
@@ -666,7 +772,7 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('promos')">
+          <a class="nav-item" id="nav-promos" onclick="switchTab('promos')">
             <div class="nav-left">
               <span>🏷️</span>
               <span>Promo Codes</span>
@@ -675,7 +781,7 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('products')">
+          <a class="nav-item" id="nav-products" onclick="switchTab('products')">
             <div class="nav-left">
               <span>📦</span>
               <span>Products</span>
@@ -684,7 +790,7 @@ const getDashboardHtml = () => `
         </li>
 
         <li>
-          <a class="nav-item" onclick="switchTab('settings')">
+          <a class="nav-item" id="nav-settings" onclick="switchTab('settings')">
             <div class="nav-left">
               <span>⚙️</span>
               <span>Settings</span>
@@ -701,7 +807,7 @@ const getDashboardHtml = () => `
         <span>↗</span>
       </a>
 
-      <button class="logout-btn" onclick="alert('Admin Session Active.')">
+      <button class="logout-btn" onclick="showToast('Admin Session: dgulati352@gmail.com is Active')">
         <span>🚪</span>
         <span>Logout</span>
       </button>
@@ -729,126 +835,744 @@ const getDashboardHtml = () => `
       </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="content-area">
-      <!-- 4 Top Metric Cards (Exact Match to Screenshot) -->
-      <div class="metrics-grid">
-        <!-- Metric 1: Total Orders -->
-        <div class="metric-card">
-          <div class="metric-icon-box icon-blue">🛍️</div>
-          <div class="metric-info">
-            <h3 id="stat-orders">6</h3>
-            <p>Total Orders</p>
-          </div>
-        </div>
-
-        <!-- Metric 2: Total Revenue -->
-        <div class="metric-card">
-          <div class="metric-icon-box icon-green" style="font-weight: 800; font-size: 1.1rem;">Rs</div>
-          <div class="metric-info">
-            <h3 id="stat-rev">₹1430</h3>
-            <p>Total Revenue</p>
-          </div>
-        </div>
-
-        <!-- Metric 3: Pending Orders -->
-        <div class="metric-card">
-          <div class="metric-icon-box icon-orange">⏱️</div>
-          <div class="metric-info">
-            <h3 id="stat-pending">4</h3>
-            <p>Pending Orders</p>
-          </div>
-        </div>
-
-        <!-- Metric 4: Total Students / Users -->
-        <div class="metric-card">
-          <div class="metric-icon-box icon-purple">👥</div>
-          <div class="metric-info">
-            <h3>11,428</h3>
-            <p>Active Students</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Orders Table Card (Exact Match to Screenshot) -->
-      <div class="table-card">
-        <div class="table-header">
-          <div class="table-title">
-            <span class="flame">🔥</span>
-            <span>Recent Orders</span>
-          </div>
-          <button class="view-all-btn" onclick="alert('Viewing all live orders from MongoDB Atlas.')">View All</button>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ORDER ID</th>
-                <th>CUSTOMER</th>
-                <th>TOTAL</th>
-                <th>STATUS</th>
-              </tr>
-            </thead>
-            <tbody id="orders-table-body">
-              <tr>
-                <td class="order-id">#1</td>
-                <td class="customer-name">Dhairya Gulati</td>
-                <td class="order-total">₹150</td>
-                <td><span class="status-badge status-pending">PENDING</span></td>
-              </tr>
-              <tr>
-                <td class="order-id">#2</td>
-                <td class="customer-name">Dhairya Gulati</td>
-                <td class="order-total">₹150</td>
-                <td><span class="status-badge status-delivered">DELIVERED</span></td>
-              </tr>
-              <tr>
-                <td class="order-id">#3</td>
-                <td class="customer-name">Dhairya Gulati</td>
-                <td class="order-total">₹350</td>
-                <td><span class="status-badge status-pending">PENDING</span></td>
-              </tr>
-              <tr>
-                <td class="order-id">#4</td>
-                <td class="customer-name">Dhairya Gulati</td>
-                <td class="order-total">₹350</td>
-                <td><span class="status-badge status-pending">PENDING</span></td>
-              </tr>
-              <tr>
-                <td class="order-id">#5</td>
-                <td class="customer-name">Dhairya Gulati</td>
-                <td class="order-total">₹350</td>
-                <td><span class="status-badge status-pending">PENDING</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <!-- Main Dynamic Content Area -->
+    <main class="content-area" id="dynamic-content">
+      <!-- Generated via renderCurrentTab() -->
     </main>
   </div>
 
+  <!-- ─── Universal Action Modal ─── -->
+  <div class="modal-overlay" id="action-modal">
+    <div class="modal-box" id="modal-box-content">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+
   <script>
-    function switchTab(tabName) {
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
+    // ─── STATE MANAGEMENT ───
+    let currentTab = 'dashboard';
+
+    let orders = [
+      { id: '#1', customer: 'Dhairya Gulati', email: 'dgulati352@gmail.com', total: 150, status: 'PENDING', date: '2026-08-21', item: 'Accountancy Formula eBook' },
+      { id: '#2', customer: 'Dhairya Gulati', email: 'dgulati352@gmail.com', total: 150, status: 'DELIVERED', date: '2026-08-21', item: 'Class 12 Macro Sample Paper' },
+      { id: '#3', customer: 'Dhairya Gulati', email: 'dgulati352@gmail.com', total: 350, status: 'PENDING', date: '2026-08-20', item: 'Business Studies Case Study Kit' },
+      { id: '#4', customer: 'Dhairya Gulati', email: 'dgulati352@gmail.com', total: 350, status: 'PENDING', date: '2026-08-20', item: 'Partnership Fundamentals Video' },
+      { id: '#5', customer: 'Dhairya Gulati', email: 'dgulati352@gmail.com', total: 350, status: 'PENDING', date: '2026-08-19', item: 'Class 12 All India Mock Test 1' },
+      { id: '#6', customer: 'Priya Sharma', email: 'priya.s@example.com', total: 80, status: 'DELIVERED', date: '2026-08-18', item: 'Economics Flashcards' },
+    ];
+
+    let customers = [
+      { id: 'CUST-01', name: 'Dhairya Gulati', email: 'dgulati352@gmail.com', grade: 'Class 12', orders: 5, spent: '₹1,350', status: 'Active', plan: 'Annual VIP' },
+      { id: 'CUST-02', name: 'Priya Sharma', email: 'priya.s@example.com', grade: 'Class 12', orders: 2, spent: '₹499', status: 'Active', plan: 'VIP Member' },
+      { id: 'CUST-03', name: 'Rahul Verma', email: 'rahul.v@example.com', grade: 'Class 11', orders: 1, spent: '₹999', status: 'Active', plan: 'Monthly Pro' },
+      { id: 'CUST-04', name: 'Ananya Patel', email: 'ananya.p@example.com', grade: 'Class 12', orders: 3, spent: '₹1,120', status: 'Active', plan: 'Free Preview' },
+    ];
+
+    let lectures = [
+      { id: 'LEC-01', title: 'Partnership: Profit & Loss Appropriation', grade: 'Class 12', subject: 'Accountancy', instructor: 'Prof. S. K. Sharma', duration: '52 mins', isFree: true, views: '28.4K' },
+      { id: 'LEC-02', title: 'Admission of a Partner: Revaluation & Goodwill', grade: 'Class 12', subject: 'Accountancy', instructor: 'Prof. S. K. Sharma', duration: '64 mins', isFree: false, views: '22.1K' },
+      { id: 'LEC-03', title: 'Principles of Management: Fayol 14 Principles', grade: 'Class 12', subject: 'Business Studies', instructor: 'Dr. Neha Verma', duration: '45 mins', isFree: true, views: '35.6K' },
+      { id: 'LEC-04', title: 'National Income: Value Added & Income Methods', grade: 'Class 12', subject: 'Macroeconomics', instructor: 'Prof. R. C. Gupta', duration: '62 mins', isFree: false, views: '41.2K' },
+    ];
+
+    let books = [
+      { id: 'BK-01', title: 'Class 12 Accountancy Board Master Guide 2026', author: 'Prof. S. K. Sharma', price: 499, sales: 1450, format: 'Paperback + eBook', pages: 420 },
+      { id: 'BK-02', title: 'Business Studies Toppers Handwritten Case Studies', author: 'Dr. Neha Verma', price: 399, sales: 1120, format: 'Handwritten Notes', pages: 280 },
+      { id: 'BK-03', title: 'Macroeconomics & Indian Development Scanner', author: 'Prof. R. C. Gupta', price: 449, sales: 1340, format: 'Paperback', pages: 360 },
+    ];
+
+    let tests = [
+      { id: 'TS-01', title: 'Class 12 Accountancy All India Board Mock 1', marks: 80, duration: '180 mins', attempts: 3420, avgScore: '82%', isFree: true },
+      { id: 'TS-02', title: 'Class 12 Business Studies Full Case Studies Mock', marks: 80, duration: '180 mins', attempts: 2890, avgScore: '79%', isFree: true },
+      { id: 'TS-03', title: 'Class 12 Macroeconomics & IED Comprehensive Mock', marks: 80, duration: '180 mins', attempts: 2150, avgScore: '76%', isFree: false },
+    ];
+
+    let promos = [
+      { code: 'TOPPER20', discount: '20% OFF', usage: '280 uses', status: 'ACTIVE' },
+      { code: 'VIP100', discount: '₹100 FLAT', usage: '410 uses', status: 'ACTIVE' },
+      { code: 'FREESHIP', discount: 'Free Delivery', usage: '120 uses', status: 'EXPIRED' },
+    ];
+
+    let banners = [
+      { id: 'BN-01', title: 'Class 12 CBSE Board 100/100 Mission Batch', status: 'LIVE', link: '/courses' },
+      { id: 'BN-02', title: 'Annual VIP Pass 50% Early Bird Discount', status: 'LIVE', link: '/membership' },
+      { id: 'BN-03', title: 'Commerce Handwritten Notes Book Fair', status: 'PAUSED', link: '/books' },
+    ];
+
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      const toast = document.createElement('div');
+      toast.className = 'toast-pill';
+      toast.innerHTML = '<span class="check">✓</span> ' + msg;
+      box.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function toggleOrderStatus(orderId) {
+      const ord = orders.find(o => o.id === orderId);
+      if (ord) {
+        ord.status = ord.status === 'PENDING' ? 'DELIVERED' : 'PENDING';
+        showToast('Order ' + orderId + ' status updated to ' + ord.status);
+        renderCurrentTab();
       }
+    }
+
+    function toggleLectureLock(lecId) {
+      const lec = lectures.find(l => l.id === lecId);
+      if (lec) {
+        lec.isFree = !lec.isFree;
+        showToast(lec.title + ' is now ' + (lec.isFree ? 'Free Preview Demo' : 'VIP Locked'));
+        renderCurrentTab();
+      }
+    }
+
+    function toggleCustomerStatus(custId) {
+      const c = customers.find(x => x.id === custId);
+      if (c) {
+        c.status = c.status === 'Active' ? 'Blocked' : 'Active';
+        showToast('Customer ' + c.name + ' is now ' + c.status);
+        renderCurrentTab();
+      }
+    }
+
+    function openModal(type) {
+      const modal = document.getElementById('action-modal');
+      const content = document.getElementById('modal-box-content');
+      modal.style.display = 'flex';
+
+      if (type === 'add-order') {
+        content.innerHTML = \`
+          <div class="modal-header">
+            <h3 class="modal-title">Create Manual Order</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
+          </div>
+          <form onsubmit="submitNewOrder(event)">
+            <div class="form-group">
+              <label class="form-label">Customer Name</label>
+              <input type="text" id="new-ord-cust" class="form-input" required placeholder="e.g. Dhairya Gulati">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Item / Material</label>
+              <input type="text" id="new-ord-item" class="form-input" required placeholder="e.g. Class 12 Accountancy Guide">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total Amount (₹)</label>
+              <input type="number" id="new-ord-total" class="form-input" required value="350">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Create Order</button>
+          </form>
+        \`;
+      } else if (type === 'add-lecture') {
+        content.innerHTML = \`
+          <div class="modal-header">
+            <h3 class="modal-title">Upload Video Lecture</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
+          </div>
+          <form onsubmit="submitNewLecture(event)">
+            <div class="form-group">
+              <label class="form-label">Lecture Title</label>
+              <input type="text" id="new-lec-title" class="form-input" required placeholder="e.g. Partnership Appropriation Account">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subject</label>
+              <select id="new-lec-sub" class="form-select">
+                <option>Accountancy</option>
+                <option>Business Studies</option>
+                <option>Macroeconomics</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Video Embed URL (YouTube/Vimeo)</label>
+              <input type="text" id="new-lec-url" class="form-input" required value="https://www.youtube.com/embed/dQw4w9WgXcQ">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Lecture</button>
+          </form>
+        \`;
+      } else if (type === 'add-promo') {
+        content.innerHTML = \`
+          <div class="modal-header">
+            <h3 class="modal-title">Create Promo Code</h3>
+            <button class="close-btn" onclick="closeModal()">✕</button>
+          </div>
+          <form onsubmit="submitNewPromo(event)">
+            <div class="form-group">
+              <label class="form-label">Coupon Code</label>
+              <input type="text" id="new-promo-code" class="form-input" required placeholder="e.g. FESTIVE50">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Discount Text</label>
+              <input type="text" id="new-promo-disc" class="form-input" required placeholder="e.g. 50% OFF">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Activate Code</button>
+          </form>
+        \`;
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('action-modal').style.display = 'none';
+    }
+
+    function submitNewOrder(e) {
+      e.preventDefault();
+      const cust = document.getElementById('new-ord-cust').value;
+      const item = document.getElementById('new-ord-item').value;
+      const total = Number(document.getElementById('new-ord-total').value) || 150;
+      orders.unshift({
+        id: '#' + (orders.length + 1),
+        customer: cust,
+        email: cust.toLowerCase().replace(' ', '.') + '@example.com',
+        total: total,
+        status: 'PENDING',
+        date: new Date().toISOString().split('T')[0],
+        item: item
+      });
+      closeModal();
+      showToast('New order created for ' + cust);
+      renderCurrentTab();
+    }
+
+    function submitNewLecture(e) {
+      e.preventDefault();
+      const title = document.getElementById('new-lec-title').value;
+      const sub = document.getElementById('new-lec-sub').value;
+      lectures.unshift({
+        id: 'LEC-0' + (lectures.length + 1),
+        title: title,
+        grade: 'Class 12',
+        subject: sub,
+        instructor: 'Prof. S. K. Sharma',
+        duration: '50 mins',
+        isFree: true,
+        views: '0'
+      });
+      closeModal();
+      showToast('Video Lecture published!');
+      renderCurrentTab();
+    }
+
+    function submitNewPromo(e) {
+      e.preventDefault();
+      const code = document.getElementById('new-promo-code').value.toUpperCase();
+      const disc = document.getElementById('new-promo-disc').value;
+      promos.unshift({ code: code, discount: disc, usage: '0 uses', status: 'ACTIVE' });
+      closeModal();
+      showToast('Promo code ' + code + ' activated!');
+      renderCurrentTab();
+    }
+
+    // ─── TAB SWITCHING & RENDERING ───
+    function switchTab(tabName) {
+      currentTab = tabName;
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const activeNav = document.getElementById('nav-' + tabName);
+      if (activeNav) activeNav.classList.add('active');
+
       const titleMap = {
         'dashboard': 'Dashboard',
         'orders': 'Orders Management',
-        'customers': 'Registered Customers & Students',
+        'customers': 'Customers & Students Directory',
         'lectures': 'Video Lectures & Masterclasses',
-        'books': 'Academic Bookstore & Study Notes',
-        'tests': 'CBT Mock Test Papers',
-        'memberships': 'VIP Subscriptions & Passes',
+        'books': 'Books & Study Material Catalog',
+        'tests': 'CBT Mock Test Series',
+        'memberships': 'Memberships & VIP Passes',
         'banners': 'Home Promotional Banners',
-        'promos': 'Promo & Discount Codes',
-        'products': 'Store Catalog & Products',
+        'promos': 'Promo & Coupon Codes',
+        'products': 'Store Products Catalog',
         'settings': 'Platform & API Settings'
       };
       document.getElementById('page-heading').innerText = titleMap[tabName] || 'Dashboard';
+      renderCurrentTab();
     }
+
+    function renderCurrentTab() {
+      const container = document.getElementById('dynamic-content');
+      const totalRev = orders.reduce((sum, o) => sum + o.total, 0);
+      const pendingCount = orders.filter(o => o.status === 'PENDING').length;
+      document.getElementById('pending-badge').innerText = pendingCount;
+
+      if (currentTab === 'dashboard') {
+        container.innerHTML = \`
+          <!-- 4 Top Metric Cards (Exact Match to Reference Screenshot) -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon-box icon-blue">🛍️</div>
+              <div class="metric-info">
+                <h3>\${orders.length}</h3>
+                <p>Total Orders</p>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box icon-green" style="font-weight: 800; font-size: 1.1rem;">Rs</div>
+              <div class="metric-info">
+                <h3>₹\${totalRev}</h3>
+                <p>Total Revenue</p>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box icon-orange">⏱️</div>
+              <div class="metric-info">
+                <h3>\${pendingCount}</h3>
+                <p>Pending Orders</p>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box icon-purple">👥</div>
+              <div class="metric-info">
+                <h3>11,428</h3>
+                <p>Active Students</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Orders Table Card -->
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span class="flame">🔥</span>
+                <span>Recent Orders</span>
+              </div>
+              <div class="header-actions">
+                <button class="btn-primary" onclick="openModal('add-order')">+ Create Order</button>
+                <button class="view-all-btn" onclick="switchTab('orders')">View All</button>
+              </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ORDER ID</th>
+                    <th>CUSTOMER</th>
+                    <th>TOTAL</th>
+                    <th>STATUS (CLICK TO TOGGLE)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${orders.slice(0, 5).map(o => \`
+                    <tr>
+                      <td class="order-id">\${o.id}</td>
+                      <td class="customer-name">\${o.customer}</td>
+                      <td class="order-total">₹\${o.total}</td>
+                      <td>
+                        <span class="status-badge \${o.status === 'PENDING' ? 'status-pending' : 'status-delivered'}" onclick="toggleOrderStatus('\${o.id}')" title="Click to toggle status">
+                          \${o.status}
+                        </span>
+                      </td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'orders') {
+        container.innerHTML = \`
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span>🛍️ All Customer Orders (\${orders.length})</span>
+              </div>
+              <button class="btn-primary" onclick="openModal('add-order')">+ New Order</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ORDER ID</th>
+                    <th>CUSTOMER & EMAIL</th>
+                    <th>ITEM PURCHASED</th>
+                    <th>DATE</th>
+                    <th>TOTAL</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${orders.map(o => \`
+                    <tr>
+                      <td class="order-id">\${o.id}</td>
+                      <td>
+                        <div class="customer-name">\${o.customer}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">\${o.email}</div>
+                      </td>
+                      <td style="color:#CBD5E1;">\${o.item}</td>
+                      <td style="color:var(--text-muted); font-size:0.8rem;">\${o.date}</td>
+                      <td class="order-total">₹\${o.total}</td>
+                      <td>
+                        <span class="status-badge \${o.status === 'PENDING' ? 'status-pending' : 'status-delivered'}" onclick="toggleOrderStatus('\${o.id}')">
+                          \${o.status}
+                        </span>
+                      </td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'customers') {
+        container.innerHTML = \`
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span>👥 Registered Students & Customers (\${customers.length})</span>
+              </div>
+              <button class="view-all-btn" onclick="showToast('Customer list synced with MongoDB Atlas.')">Sync DB</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>USER</th>
+                    <th>GRADE / CLASS</th>
+                    <th>ORDERS</th>
+                    <th>TOTAL SPENT</th>
+                    <th>MEMBERSHIP</th>
+                    <th>STATUS (CLICK TO TOGGLE)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${customers.map(c => \`
+                    <tr>
+                      <td>
+                        <div class="customer-name">\${c.name}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">\${c.email}</div>
+                      </td>
+                      <td><span style="font-weight:700; color:#818CF8;">\${c.grade}</span></td>
+                      <td>\${c.orders} orders</td>
+                      <td class="order-total">\${c.spent}</td>
+                      <td><span class="status-badge status-shipped">\${c.plan}</span></td>
+                      <td>
+                        <span class="status-badge \${c.status === 'Active' ? 'status-delivered' : 'status-pending'}" onclick="toggleCustomerStatus('\${c.id}')">
+                          \${c.status}
+                        </span>
+                      </td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'lectures') {
+        container.innerHTML = \`
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span>🎥 HD Video Lectures & Masterclasses (\${lectures.length})</span>
+              </div>
+              <button class="btn-primary" onclick="openModal('add-lecture')">+ Upload Lecture</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>TOPIC & SUBJECT</th>
+                    <th>GRADE</th>
+                    <th>INSTRUCTOR</th>
+                    <th>DURATION & VIEWS</th>
+                    <th>ACCESS LOCK (CLICK TO TOGGLE)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${lectures.map(l => \`
+                    <tr>
+                      <td>
+                        <div class="customer-name">\${l.title}</div>
+                        <div style="font-size:0.75rem; color:#818CF8; font-weight:700;">\${l.subject}</div>
+                      </td>
+                      <td>\${l.grade}</td>
+                      <td>\${l.instructor}</td>
+                      <td>\${l.duration} • \${l.views}</td>
+                      <td>
+                        <span class="status-badge \${l.isFree ? 'status-delivered' : 'status-pending'}" onclick="toggleLectureLock('\${l.id}')">
+                          \${l.isFree ? 'FREE DEMO' : 'VIP LOCKED'}
+                        </span>
+                      </td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'books') {
+        container.innerHTML = \`
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span>📚 Published Books & Study Materials (\${books.length})</span>
+              </div>
+              <button class="btn-primary" onclick="showToast('Add book modal opened.')">+ Add Book / PDF</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>TITLE & AUTHOR</th>
+                    <th>FORMAT & PAGES</th>
+                    <th>PRICE</th>
+                    <th>COPIES SOLD</th>
+                    <th>PREVIEW STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${books.map(b => \`
+                    <tr>
+                      <td>
+                        <div class="customer-name">\${b.title}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">By \${b.author}</div>
+                      </td>
+                      <td>\${b.format} • \${b.pages} pages</td>
+                      <td class="order-total">₹\${b.price}</td>
+                      <td>\${b.sales} sold</td>
+                      <td><span class="status-badge status-delivered">5-Page Preview Active</span></td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'tests') {
+        container.innerHTML = \`
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span>📝 CBT Mock Test Series (\${tests.length})</span>
+              </div>
+              <button class="btn-primary" onclick="showToast('Test series editor opened.')">+ Create Test</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>TEST PAPER TITLE</th>
+                    <th>MARKS & DURATION</th>
+                    <th>ATTEMPTS</th>
+                    <th>AVG SCORE</th>
+                    <th>ACCESS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${tests.map(t => \`
+                    <tr>
+                      <td class="customer-name">\${t.title}</td>
+                      <td>\${t.marks} Marks • \${t.duration}</td>
+                      <td>\${t.attempts} students</td>
+                      <td style="color:#34D399; font-weight:700;">\${t.avgScore}</td>
+                      <td><span class="status-badge \${t.isFree ? 'status-delivered' : 'status-pending'}">\${t.isFree ? 'FREE' : 'VIP LOCKED'}</span></td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'memberships') {
+        container.innerHTML = \`
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon-box icon-purple">👑</div>
+              <div class="metric-info">
+                <h3>₹999</h3>
+                <p>Monthly Pro Pass (280 Users)</p>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon-box icon-blue">⚡</div>
+              <div class="metric-info">
+                <h3>₹2,499</h3>
+                <p>3-Month Booster (410 Users)</p>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon-box icon-orange">🏆</div>
+              <div class="metric-info">
+                <h3>₹6,999</h3>
+                <p>Annual VIP Pass (190 Users)</p>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon-box icon-green" style="font-weight:800; font-size:1.1rem;">Rs</div>
+              <div class="metric-info">
+                <h3>₹26.3L</h3>
+                <p>Gross Subscriptions</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-card" style="padding:1.75rem;">
+            <div class="table-title" style="margin-bottom:1rem;">
+              <span>👑 Instant Student VIP Pass Grant Tool</span>
+            </div>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">
+              Enter any student email to unlock all video lectures, mock test simulators, and handwritten notes PDF.
+            </p>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+              <input type="email" id="grant-email-input" class="form-input" style="flex:1; min-width:240px;" placeholder="e.g. student@example.com">
+              <select id="grant-tier-select" class="form-select" style="width:200px;">
+                <option>Annual VIP Topper Plan</option>
+                <option>Monthly Pro Pass</option>
+                <option>3-Month Booster</option>
+              </select>
+              <button class="btn-primary" onclick="grantVipPass()">Grant Membership</button>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'banners') {
+        container.innerHTML = \`
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span>🖼️ Promotional Home Banners (\${banners.length})</span>
+              </div>
+              <button class="btn-primary" onclick="showToast('Upload banner modal opened.')">+ Upload Banner</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>BANNER TITLE</th>
+                    <th>TARGET LINK</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${banners.map(b => \`
+                    <tr>
+                      <td class="customer-name">\${b.title}</td>
+                      <td style="color:#38BDF8; font-family:'JetBrains Mono';">\${b.link}</td>
+                      <td><span class="status-badge \${b.status === 'LIVE' ? 'status-delivered' : 'status-pending'}">\${b.status}</span></td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'promos') {
+        container.innerHTML = \`
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span>🏷️ Promo & Coupon Codes (\${promos.length})</span>
+              </div>
+              <button class="btn-primary" onclick="openModal('add-promo')">+ Create Code</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>PROMO CODE</th>
+                    <th>DISCOUNT OFFER</th>
+                    <th>USAGE COUNT</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${promos.map(p => \`
+                    <tr>
+                      <td class="order-id" style="font-size:0.95rem;">\${p.code}</td>
+                      <td class="customer-name">\${p.discount}</td>
+                      <td>\${p.usage}</td>
+                      <td><span class="status-badge \${p.status === 'ACTIVE' ? 'status-delivered' : 'status-pending'}">\${p.status}</span></td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'products') {
+        container.innerHTML = \`
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">
+                <span>📦 Store Products & Book Bundles (\${books.length})</span>
+              </div>
+              <button class="btn-primary" onclick="showToast('Product editor opened.')">+ Add Product</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>PRODUCT</th>
+                    <th>PRICE</th>
+                    <th>INVENTORY</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  \${books.map(b => \`
+                    <tr>
+                      <td class="customer-name">\${b.title}</td>
+                      <td class="order-total">₹\${b.price}</td>
+                      <td>In Stock (Unlimited Digital / Print-on-Demand)</td>
+                      <td><span class="status-badge status-delivered">ACTIVE</span></td>
+                    </tr>
+                  \`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        \`;
+      } else if (currentTab === 'settings') {
+        container.innerHTML = \`
+          <div class="table-card" style="padding:2rem;">
+            <div class="table-title" style="margin-bottom:1.5rem;">
+              <span>⚙️ Platform & API Server Configuration</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1.5rem;">
+              <div style="background:#0E121B; padding:1.2rem; border-radius:14px; border:1px solid var(--card-border);">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Database Engine</div>
+                <div style="font-size:1.1rem; font-weight:800; color:#34D399; margin-top:0.25rem;">MongoDB Atlas (Synced)</div>
+                <div style="font-size:0.75rem; color:#64748B; margin-top:0.25rem;">Cloud Cluster Connected & Operational</div>
+              </div>
+
+              <div style="background:#0E121B; padding:1.2rem; border-radius:14px; border:1px solid var(--card-border);">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Super Admin Account</div>
+                <div style="font-size:1.1rem; font-weight:800; color:#38BDF8; margin-top:0.25rem;">dgulati352@gmail.com</div>
+                <div style="font-size:0.75rem; color:#64748B; margin-top:0.25rem;">Full Super Administrator Privileges</div>
+              </div>
+
+              <div style="background:#0E121B; padding:1.2rem; border-radius:14px; border:1px solid var(--card-border);">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">CORS & API Security</div>
+                <div style="font-size:1.1rem; font-weight:800; color:#A78BFA; margin-top:0.25rem;">Allow-All (*) Active</div>
+                <div style="font-size:0.75rem; color:#64748B; margin-top:0.25rem;">Frontend origin verified with credentials</div>
+              </div>
+            </div>
+          </div>
+        \`;
+      }
+    }
+
+    function grantVipPass() {
+      const email = document.getElementById('grant-email-input').value;
+      const tier = document.getElementById('grant-tier-select').value;
+      if (!email) {
+        alert('Please enter student email');
+        return;
+      }
+      customers.push({
+        id: 'CUST-0' + (customers.length + 1),
+        name: email.split('@')[0],
+        email: email,
+        grade: 'Class 12',
+        orders: 1,
+        spent: '₹0 (Granted)',
+        status: 'Active',
+        plan: tier
+      });
+      showToast('Successfully granted ' + tier + ' to ' + email);
+      document.getElementById('grant-email-input').value = '';
+    }
+
+    // Initial render
+    renderCurrentTab();
   </script>
 </body>
 </html>
