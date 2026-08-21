@@ -17,6 +17,7 @@ import membershipRoutes from './routes/memberships.js';
 import liveStreamRoutes from './routes/liveStreams.js';
 import orderRoutes from './routes/orders.js';
 import adminRoutes from './routes/admin.js';
+import paymentRoutes, { handleCreateOrder, handleVerifyPayment } from './routes/payment.js';
 
 const app = express();
 
@@ -86,6 +87,7 @@ const apiRootHandler = (req, res) => {
       memberships: { path: '/api/memberships', status: 'ready' },
       liveStreams: { path: '/api/live-streams', status: 'ready' },
       orders: { path: '/api/orders', status: 'ready' },
+      payment: { path: '/api/payment', status: 'ready' },
       admin: { path: '/api/admin', status: 'ready' },
       health: { path: '/api/health', status: 'ready' },
     },
@@ -105,7 +107,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ─── 6. Mount API Sub-Routers ───
+// ─── 6. Mount API Sub-Routers & Razorpay Endpoints ───
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/books', bookRoutes);
@@ -114,6 +116,9 @@ app.use('/api/tests', testRoutes);
 app.use('/api/memberships', membershipRoutes);
 app.use('/api/live-streams', liveStreamRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/payment', paymentRoutes);
+app.post('/api/create-order', handleCreateOrder);
+app.post('/api/verify-payment', handleVerifyPayment);
 app.use('/api/admin', adminRoutes);
 
 // ─── 7. Global Error & 404 Handlers ───

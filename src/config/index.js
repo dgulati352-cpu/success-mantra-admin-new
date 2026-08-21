@@ -20,6 +20,10 @@ export const config = {
     secretKey: process.env.STRIPE_SECRET_KEY,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET
   },
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_TSSSbzfqnMRNfR',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || 'bOEJs5ws33FUqGLMo54rt6Ww'
+  },
   email: {
     host: process.env.EMAIL_HOST,
     port: parseInt(process.env.EMAIL_PORT) || 587,
