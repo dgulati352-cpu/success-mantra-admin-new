@@ -566,15 +566,8 @@ export const adminDashboardHtml = `<!DOCTYPE html>
 </head>
 <body>
 
-  <!-- Toast Notification Container -->
-  <div class="toast-container" id="toast-box">
-    <div class="toast-pill">
-      <span class="check">✓</span> Database connected ✓
-    </div>
-    <div class="toast-pill" id="order-count-toast">
-      <span class="check">✓</span> 6 order(s) found
-    </div>
-  </div>
+  <!-- Toast Notification Container (Dynamic only on user actions) -->
+  <div class="toast-container" id="toast-box"></div>
 
   <!-- Left Sidebar -->
   <aside class="sidebar">
