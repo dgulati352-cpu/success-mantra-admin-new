@@ -961,33 +961,80 @@ const getDashboardHtml = () => `
             </div>
             <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Create Order</button>
           </form>
-        \`;
+        `;
       } else if (type === 'add-lecture') {
-        content.innerHTML = \`
+        content.innerHTML = `
           <div class="modal-header">
             <h3 class="modal-title">Upload Video Lecture</h3>
             <button class="close-btn" onclick="closeModal()">✕</button>
           </div>
           <form onsubmit="submitNewLecture(event)">
+            <!-- Source Selector Tabs -->
             <div class="form-group">
-              <label class="form-label">Lecture Title</label>
+              <label class="form-label">Video Source Type</label>
+              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.5rem; margin-bottom:0.75rem;">
+                <button type="button" id="tab-yt" class="btn-primary" style="background:#DC2626; padding:0.45rem; font-size:0.75rem;" onclick="setVideoSourceMode('youtube')">
+                  🔴 YouTube / Vimeo
+                </button>
+                <button type="button" id="tab-file" class="view-all-btn" style="padding:0.45rem; font-size:0.75rem;" onclick="setVideoSourceMode('file')">
+                  📁 Recorded Video File
+                </button>
+                <button type="button" id="tab-cloud" class="view-all-btn" style="padding:0.45rem; font-size:0.75rem;" onclick="setVideoSourceMode('cloud')">
+                  ☁️ Cloud / AWS S3
+                </button>
+              </div>
+            </div>
+
+            <!-- YouTube URL Input -->
+            <div class="form-group" id="yt-url-group">
+              <label class="form-label">YouTube / Vimeo Embed URL</label>
+              <input type="text" id="new-lec-url" class="form-input" placeholder="https://www.youtube.com/watch?v=... or embed URL" value="https://www.youtube.com/embed/dQw4w9WgXcQ">
+              <span style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem; display:block;">Auto-converts standard watch URLs into responsive embeds.</span>
+            </div>
+
+            <!-- Recorded Video File Picker -->
+            <div class="form-group" id="file-upload-group" style="display:none;">
+              <label class="form-label">Choose Recorded Video File (.mp4, .mov, .webm, .mkv)</label>
+              <div style="border:2px dashed var(--card-border); border-radius:12px; padding:1.2rem; text-align:center; background:#0E121B;">
+                <div style="font-size:1.5rem; margin-bottom:0.3rem;">🎥</div>
+                <div id="file-chosen-name" style="font-size:0.8rem; font-weight:700; color:#818CF8; margin-bottom:0.4rem;">Select local video recording</div>
+                <input type="file" id="local-video-input" accept="video/*" style="display:none;" onchange="handleLocalVideoSelected(event)">
+                <label for="local-video-input" class="btn-primary" style="cursor:pointer; display:inline-block; font-size:0.75rem;">Browse Recorded Video</label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Lecture Topic / Title</label>
               <input type="text" id="new-lec-title" class="form-input" required placeholder="e.g. Partnership Appropriation Account">
             </div>
-            <div class="form-group">
-              <label class="form-label">Subject</label>
-              <select id="new-lec-sub" class="form-select">
-                <option>Accountancy</option>
-                <option>Business Studies</option>
-                <option>Macroeconomics</option>
-              </select>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+              <div class="form-group">
+                <label class="form-label">Subject</label>
+                <select id="new-lec-sub" class="form-select">
+                  <option>Accountancy</option>
+                  <option>Business Studies</option>
+                  <option>Macroeconomics</option>
+                  <option>Commercial Law</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Duration</label>
+                <input type="text" id="new-lec-dur" class="form-input" placeholder="e.g. 52 mins" value="50 mins">
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Video Embed URL (YouTube/Vimeo)</label>
-              <input type="text" id="new-lec-url" class="form-input" required value="https://www.youtube.com/embed/dQw4w9WgXcQ">
+
+            <div class="form-group" style="background:#0E121B; padding:0.75rem; border-radius:10px; border:1px solid var(--card-border);">
+              <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-weight:700; color:white; cursor:pointer;">
+                <input type="checkbox" id="new-lec-free" checked>
+                <span>Free Preview Demo (Unlocked for all students)</span>
+              </label>
             </div>
-            <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Lecture</button>
+
+            <button type="submit" class="btn-primary" style="width:100%; padding:0.75rem;">Publish Video Lecture</button>
           </form>
-        \`;
+        `;
       } else if (type === 'add-promo') {
         content.innerHTML = \`
           <div class="modal-header">
@@ -1032,22 +1079,78 @@ const getDashboardHtml = () => `
       renderCurrentTab();
     }
 
+    let activeVideoSourceMode = 'youtube';
+    let selectedVideoFileName = '';
+
+    function setVideoSourceMode(mode) {
+      activeVideoSourceMode = mode;
+      const tabYt = document.getElementById('tab-yt');
+      const tabFile = document.getElementById('tab-file');
+      const tabCloud = document.getElementById('tab-cloud');
+      const ytGroup = document.getElementById('yt-url-group');
+      const fileGroup = document.getElementById('file-upload-group');
+
+      if (tabYt && tabFile && tabCloud) {
+        tabYt.className = mode === 'youtube' ? 'btn-primary' : 'view-all-btn';
+        tabYt.style.background = mode === 'youtube' ? '#DC2626' : '';
+        tabFile.className = mode === 'file' ? 'btn-primary' : 'view-all-btn';
+        tabFile.style.background = mode === 'file' ? '#9333EA' : '';
+        tabCloud.className = mode === 'cloud' ? 'btn-primary' : 'view-all-btn';
+        tabCloud.style.background = mode === 'cloud' ? '#2563EB' : '';
+      }
+
+      if (ytGroup && fileGroup) {
+        if (mode === 'youtube' || mode === 'cloud') {
+          ytGroup.style.display = 'block';
+          fileGroup.style.display = 'none';
+        } else {
+          ytGroup.style.display = 'none';
+          fileGroup.style.display = 'block';
+        }
+      }
+    }
+
+    function handleLocalVideoSelected(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        selectedVideoFileName = file.name;
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        const nameEl = document.getElementById('file-chosen-name');
+        if (nameEl) {
+          nameEl.innerHTML = '✓ Selected: ' + file.name + ' (' + sizeMb + ' MB)';
+          nameEl.style.color = '#34D399';
+        }
+        showToast('Recorded video loaded: ' + file.name);
+      }
+    }
+
     function submitNewLecture(e) {
       e.preventDefault();
       const title = document.getElementById('new-lec-title').value;
       const sub = document.getElementById('new-lec-sub').value;
+      const dur = (document.getElementById('new-lec-dur') && document.getElementById('new-lec-dur').value) || '50 mins';
+      const isFree = document.getElementById('new-lec-free') ? document.getElementById('new-lec-free').checked : true;
+      let videoSource = 'YouTube Masterclass';
+
+      if (activeVideoSourceMode === 'file' && selectedVideoFileName) {
+        videoSource = 'Recorded File (' + selectedVideoFileName + ')';
+      } else if (document.getElementById('new-lec-url')) {
+        videoSource = document.getElementById('new-lec-url').value;
+      }
+
       lectures.unshift({
         id: 'LEC-0' + (lectures.length + 1),
         title: title,
         grade: 'Class 12',
         subject: sub,
         instructor: 'Prof. S. K. Sharma',
-        duration: '50 mins',
-        isFree: true,
-        views: '0'
+        duration: dur,
+        isFree: isFree,
+        views: '0',
+        source: videoSource
       });
       closeModal();
-      showToast('Video Lecture published!');
+      showToast('Video Lecture published (' + (isFree ? 'Free Preview' : 'VIP Locked') + ')!');
       renderCurrentTab();
     }
 
